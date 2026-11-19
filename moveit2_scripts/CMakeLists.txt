@@ -7,7 +7,29 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(moveit_msgs REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
 find_package(rclcpp REQUIRED)
+
+add_executable(pick_and_place src/pick_and_place.cpp)
+target_compile_features(pick_and_place PUBLIC cxx_std_17)
+target_include_directories(pick_and_place PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+ament_target_dependencies(pick_and_place
+  geometry_msgs
+  moveit_msgs
+  moveit_ros_planning_interface
+  rclcpp
+)
+
+install(TARGETS pick_and_place
+  DESTINATION lib/${PROJECT_NAME}
+)
+install(DIRECTORY include/
+  DESTINATION include
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -20,5 +42,13 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_include_directories(include)
+ament_export_dependencies(
+  geometry_msgs
+  moveit_msgs
+  moveit_ros_planning_interface
+  rclcpp
+)
 
 ament_package()
