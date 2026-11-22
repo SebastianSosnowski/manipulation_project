@@ -230,10 +230,14 @@ int main(int argc, char **argv) {
     PickAndPlace pick_and_place(base_node);
 
     geometry_msgs::msg::PoseStamped object_pose;
-    object_pose.header.frame_id = "base_link";
-    object_pose.pose.position.x = 0.34;
-    object_pose.pose.position.y = -0.02;
-    object_pose.pose.position.z = 0.02;
+    object_pose.header.frame_id = base_node->declare_parameter<std::string>(
+        "object_pose.frame_id", "base_link");
+    object_pose.pose.position.x =
+        base_node->declare_parameter<double>("object_pose.x", 0.34);
+    object_pose.pose.position.y =
+        base_node->declare_parameter<double>("object_pose.y", -0.02);
+    object_pose.pose.position.z =
+        base_node->declare_parameter<double>("object_pose.z", 0.02);
     object_pose.pose.orientation.w = 1.0;
 
     result = pick_and_place.execute_trajectory_plan(object_pose) ? 0 : 1;

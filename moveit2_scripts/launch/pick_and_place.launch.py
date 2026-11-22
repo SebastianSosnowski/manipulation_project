@@ -18,7 +18,12 @@ def generate_launch_description():
             moveit_config.robot_description_semantic,
             moveit_config.robot_description_kinematics,
             {'use_sim_time': True},
-        ],
+            {
+            "object_pose.frame_id": "base_link",
+            "object_pose.x": 0.34,
+            "object_pose.y": -0.02,
+            "object_pose.z": 0.02,
+        }],
     )
 
     return LaunchDescription(
