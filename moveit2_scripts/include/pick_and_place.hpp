@@ -1,6 +1,7 @@
 #ifndef PICK_AND_PLACE_HPP_
 #define PICK_AND_PLACE_HPP_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <thread>
@@ -19,8 +20,8 @@ public:
 
   ~PickAndPlace();
 
-  bool execute_trajectory_plan(
-      const geometry_msgs::msg::PoseStamped &object_pose);
+  bool
+  execute_trajectory_plan(const geometry_msgs::msg::PoseStamped &object_pose);
 
 private:
   using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
@@ -51,17 +52,16 @@ private:
 
   bool plan_trajectory(MoveGroupInterface &move_group, Plan &trajectory_plan);
   bool execute_trajectory(MoveGroupInterface &move_group,
-                           const Plan &trajectory_plan);
+                          const Plan &trajectory_plan);
   void setup_named_target(MoveGroupInterface &move_group,
                           const std::string &target_name);
   void setup_joint_target(MoveGroupInterface &move_group,
-                          const std::vector<double> &joint_positions);
+                          const std::map<std::string, double> &joint_positions);
   void setup_pose_target(MoveGroupInterface &move_group,
                          const geometry_msgs::msg::PoseStamped &target_pose);
   void setup_cartesian_waypoints(double dx, double dy, double dz);
-  bool plan_cartesian_trajectory(
-      MoveGroupInterface &move_group,
-      moveit_msgs::msg::RobotTrajectory &trajectory);
+  bool plan_cartesian_trajectory(MoveGroupInterface &move_group,
+                                 moveit_msgs::msg::RobotTrajectory &trajectory);
   bool execute_cartesian_trajectory(
       MoveGroupInterface &move_group,
       const moveit_msgs::msg::RobotTrajectory &trajectory);

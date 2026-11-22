@@ -1,8 +1,11 @@
 #include "pick_and_place.hpp"
 
+#include <chrono>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -86,6 +89,7 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to move to pre-grasp pose");
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   setup_named_target(*move_group_gripper_, "gripper_open");
   if (!plan_trajectory(*move_group_gripper_, trajectory_plan_gripper_) ||
@@ -93,8 +97,10 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to open gripper");
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  setup_cartesian_waypoints(0.0, 0.0, -approach_distance_);
+  setup_cartesian_waypoints(0.0, 0.0,
+                            -1 * (box_height_ / 2.0 + approach_distance_));
   if (!plan_cartesian_trajectory(*move_group_robot_,
                                  cartesian_trajectory_plan_) ||
       !execute_cartesian_trajectory(*move_group_robot_,
@@ -102,6 +108,7 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to descend towards object");
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   setup_named_target(*move_group_gripper_, "gripper_close");
   if (!plan_trajectory(*move_group_gripper_, trajectory_plan_gripper_) ||
@@ -109,8 +116,9 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to close gripper");
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  setup_cartesian_waypoints(0.0, 0.0, approach_distance_);
+  setup_cartesian_waypoints(0.0, 0.0, box_height_ / 2.0 + approach_distance_);
   if (!plan_cartesian_trajectory(*move_group_robot_,
                                  cartesian_trajectory_plan_) ||
       !execute_cartesian_trajectory(*move_group_robot_,
@@ -118,24 +126,20 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to lift object");
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(2));
 
-  const std::vector<double> place_joint_positions = {
-      -1.5304, -1.1187, -2.0933, -1.5003, 1.5708, 0.0388};
+  const std::map<std::string, double> place_joint_positions = {
+      {"shoulder_pan_joint", 2.6959}, {"shoulder_lift_joint", -0.6850},
+      {"elbow_joint", 0.5442},        {"wrist_2_joint", 1.5713},
+      {"wrist_3_joint", 1.1172},      {"wrist_1_joint", 1.7109}};
+
   setup_joint_target(*move_group_robot_, place_joint_positions);
   if (!plan_trajectory(*move_group_robot_, trajectory_plan_robot_) ||
       !execute_trajectory(*move_group_robot_, trajectory_plan_robot_)) {
     RCLCPP_ERROR(logger_, "Failed to move to place position");
     return false;
   }
-
-  setup_cartesian_waypoints(0.0, 0.0, -approach_distance_);
-  if (!plan_cartesian_trajectory(*move_group_robot_,
-                                 cartesian_trajectory_plan_) ||
-      !execute_cartesian_trajectory(*move_group_robot_,
-                                    cartesian_trajectory_plan_)) {
-    RCLCPP_ERROR(logger_, "Failed to lower object");
-    return false;
-  }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   setup_named_target(*move_group_gripper_, "gripper_open");
   if (!plan_trajectory(*move_group_gripper_, trajectory_plan_gripper_) ||
@@ -143,6 +147,7 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to release object");
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   setup_named_target(*move_group_robot_, "home");
   if (!plan_trajectory(*move_group_robot_, trajectory_plan_robot_) ||
@@ -172,7 +177,7 @@ void PickAndPlace::setup_named_target(MoveGroupInterface &move_group,
 
 void PickAndPlace::setup_joint_target(
     MoveGroupInterface &move_group,
-    const std::vector<double> &joint_positions) {
+    const std::map<std::string, double> &joint_positions) {
   move_group.setJointValueTarget(joint_positions);
 }
 
