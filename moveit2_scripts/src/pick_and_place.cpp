@@ -57,9 +57,9 @@ PickAndPlace::~PickAndPlace() {
 }
 
 bool PickAndPlace::execute_trajectory_plan(
-    const geometry_msgs::msg::PoseStamped &pre_grasp_pose) {
-  if (pre_grasp_pose.header.frame_id.empty()) {
-    RCLCPP_ERROR(logger_, "Pre-grasp pose frame_id must not be empty");
+    const geometry_msgs::msg::PoseStamped &object_pose) {
+  if (object_pose.header.frame_id.empty()) {
+    RCLCPP_ERROR(logger_, "Object pose frame_id must not be empty");
     return false;
   }
 
@@ -71,6 +71,14 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to move robot to home position");
     return false;
   }
+
+  auto pre_grasp_pose = object_pose;
+  pre_grasp_pose.pose.position.z +=
+      box_height_ / 2.0 + approach_distance_ + gripper_tcp_offset_;
+  pre_grasp_pose.pose.orientation.x = -1.0;
+  pre_grasp_pose.pose.orientation.y = 0.0;
+  pre_grasp_pose.pose.orientation.z = 0.0;
+  pre_grasp_pose.pose.orientation.w = 0.0;
 
   setup_pose_target(*move_group_robot_, pre_grasp_pose);
   if (!plan_trajectory(*move_group_robot_, trajectory_plan_robot_) ||
@@ -216,17 +224,14 @@ int main(int argc, char **argv) {
     auto base_node = std::make_shared<rclcpp::Node>("pick_and_place");
     PickAndPlace pick_and_place(base_node);
 
-    geometry_msgs::msg::PoseStamped pre_grasp_pose;
-    pre_grasp_pose.header.frame_id = "base_link";
-    pre_grasp_pose.pose.position.x = 0.343;
-    pre_grasp_pose.pose.position.y = 0.132;
-    pre_grasp_pose.pose.position.z = 0.264;
-    pre_grasp_pose.pose.orientation.x = -1.0;
-    pre_grasp_pose.pose.orientation.y = 0.0;
-    pre_grasp_pose.pose.orientation.z = 0.0;
-    pre_grasp_pose.pose.orientation.w = 0.0;
+    geometry_msgs::msg::PoseStamped object_pose;
+    object_pose.header.frame_id = "base_link";
+    object_pose.pose.position.x = 0.34;
+    object_pose.pose.position.y = -0.02;
+    object_pose.pose.position.z = 0.02;
+    object_pose.pose.orientation.w = 1.0;
 
-    result = pick_and_place.execute_trajectory_plan(pre_grasp_pose) ? 0 : 1;
+    result = pick_and_place.execute_trajectory_plan(object_pose) ? 0 : 1;
   } catch (const std::exception &error) {
     RCLCPP_ERROR(rclcpp::get_logger("pick_and_place"), "%s", error.what());
     result = 1;
