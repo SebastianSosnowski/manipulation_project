@@ -126,7 +126,7 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to lift object");
     return false;
   }
-  std::this_thread::sleep_for(std::chrono::seconds(2));
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   const std::map<std::string, double> place_joint_positions = {
       {"shoulder_pan_joint", 2.6959}, {"shoulder_lift_joint", -0.6850},

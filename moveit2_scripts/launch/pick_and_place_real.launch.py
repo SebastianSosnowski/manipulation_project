@@ -20,9 +20,9 @@ def generate_launch_description():
             {'use_sim_time': False},
             {
             "object_pose.frame_id": "base_link",
-            "object_pose.x": 0.343,
+            "object_pose.x": 0.360,
             "object_pose.y": 0.132,
-            "object_pose.z": 0.02,
+            "object_pose.z": 0.05,
         }],
     )
 
