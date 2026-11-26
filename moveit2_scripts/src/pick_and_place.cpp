@@ -99,8 +99,7 @@ bool PickAndPlace::execute_trajectory_plan(
   }
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  setup_cartesian_waypoints(0.0, 0.0,
-                            -1 * (box_height_ / 2.0 + approach_distance_));
+  setup_cartesian_waypoints(0.0, 0.0, -grasp_approach_distance_);
   if (!plan_cartesian_trajectory(*move_group_robot_,
                                  cartesian_trajectory_plan_) ||
       !execute_cartesian_trajectory(*move_group_robot_,
@@ -118,7 +117,7 @@ bool PickAndPlace::execute_trajectory_plan(
   }
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  setup_cartesian_waypoints(0.0, 0.0, box_height_ / 2.0 + approach_distance_);
+  setup_cartesian_waypoints(0.0, 0.0, grasp_approach_distance_);
   if (!plan_cartesian_trajectory(*move_group_robot_,
                                  cartesian_trajectory_plan_) ||
       !execute_cartesian_trajectory(*move_group_robot_,

@@ -47,6 +47,7 @@ private:
   const double end_effector_step_{0.01};
   const double jump_threshold_{0.0};
   const double approach_distance_{0.060};
+  const double grasp_approach_distance_{0.075};
   const double box_height_{0.060};
   const double gripper_tcp_offset_{0.16};
 
