@@ -1,5 +1,7 @@
 #include "pick_and_place.hpp"
 
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+
 #include <chrono>
 #include <map>
 #include <memory>
@@ -9,9 +11,14 @@
 #include <utility>
 #include <vector>
 
+#include "moveit_msgs/msg/collision_object.hpp"
+#include "shape_msgs/msg/solid_primitive.hpp"
+
 namespace {
 const std::string PLANNING_GROUP_ROBOT = "ur_manipulator";
 const std::string PLANNING_GROUP_GRIPPER = "gripper";
+const std::string BOX_ID = "picked_box";
+const std::string GRIPPER_ATTACH_LINK = "robotiq_85_base_link";
 } // namespace
 
 PickAndPlace::PickAndPlace(rclcpp::Node::SharedPtr base_node)
@@ -117,6 +124,10 @@ bool PickAndPlace::execute_trajectory_plan(
   }
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
+  if (!attach_box_to_gripper(object_pose)) {
+    return false;
+  }
+
   setup_cartesian_waypoints(0.0, 0.0, grasp_approach_distance_);
   if (!plan_cartesian_trajectory(*move_group_robot_,
                                  cartesian_trajectory_plan_) ||
@@ -147,6 +158,10 @@ bool PickAndPlace::execute_trajectory_plan(
     return false;
   }
   std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  if (!detach_box_from_gripper()) {
+    return false;
+  }
 
   setup_named_target(*move_group_robot_, "home");
   if (!plan_trajectory(*move_group_robot_, trajectory_plan_robot_) ||
@@ -218,6 +233,48 @@ bool PickAndPlace::execute_cartesian_trajectory(
     const moveit_msgs::msg::RobotTrajectory &trajectory) {
   return move_group.execute(trajectory) ==
          moveit::core::MoveItErrorCode::SUCCESS;
+}
+
+bool PickAndPlace::attach_box_to_gripper(
+    const geometry_msgs::msg::PoseStamped &object_pose) {
+  moveit::planning_interface::PlanningSceneInterface planning_scene;
+
+  moveit_msgs::msg::CollisionObject box;
+  box.header.frame_id = object_pose.header.frame_id;
+  box.id = BOX_ID;
+
+  shape_msgs::msg::SolidPrimitive shape;
+  shape.type = shape_msgs::msg::SolidPrimitive::BOX;
+  shape.dimensions = {0.02, 0.02, box_height_};
+
+  box.primitives.push_back(shape);
+  box.primitive_poses.push_back(object_pose.pose);
+  box.operation = moveit_msgs::msg::CollisionObject::ADD;
+
+  if (!planning_scene.applyCollisionObject(box)) {
+    RCLCPP_ERROR(logger_, "Failed to add box to planning scene");
+    return false;
+  }
+
+  const std::vector<std::string> touch_links = {
+      "robotiq_85_left_finger_tip_link",
+      "robotiq_85_right_finger_tip_link"};
+  if (!move_group_robot_->attachObject(BOX_ID, GRIPPER_ATTACH_LINK,
+                                       touch_links)) {
+    RCLCPP_ERROR(logger_, "Failed to attach box to gripper");
+    return false;
+  }
+
+  return true;
+}
+
+bool PickAndPlace::detach_box_from_gripper() {
+  if (!move_group_robot_->detachObject(BOX_ID)) {
+    RCLCPP_ERROR(logger_, "Failed to detach box from gripper");
+    return false;
+  }
+
+  return true;
 }
 
 int main(int argc, char **argv) {

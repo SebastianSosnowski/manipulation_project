@@ -66,6 +66,9 @@ private:
   bool execute_cartesian_trajectory(
       MoveGroupInterface &move_group,
       const moveit_msgs::msg::RobotTrajectory &trajectory);
+  bool attach_box_to_gripper(
+      const geometry_msgs::msg::PoseStamped &object_pose);
+  bool detach_box_from_gripper();
 };
 
 #endif // PICK_AND_PLACE_HPP_

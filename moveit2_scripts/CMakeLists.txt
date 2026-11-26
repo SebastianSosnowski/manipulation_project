@@ -11,6 +11,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(shape_msgs REQUIRED)
 
 add_executable(pick_and_place src/pick_and_place.cpp)
 target_compile_features(pick_and_place PUBLIC cxx_std_17)
@@ -22,6 +23,7 @@ ament_target_dependencies(pick_and_place
   moveit_msgs
   moveit_ros_planning_interface
   rclcpp
+  shape_msgs
 )
 
 install(TARGETS pick_and_place
@@ -52,6 +54,7 @@ ament_export_dependencies(
   moveit_msgs
   moveit_ros_planning_interface
   rclcpp
+  shape_msgs
 )
 
 ament_package()
