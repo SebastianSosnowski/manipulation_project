@@ -20,10 +20,11 @@ def generate_launch_description():
             {'use_sim_time': False},
             {
             "object_pose.frame_id": "base_link",
-            "object_pose.x": 0.360,
+            "object_pose.x": 0.380,
             "object_pose.y": 0.132,
             "object_pose.z": 0.05,
         }],
+        remappings=[("/joint_states", "/rrl/actual_joint_states")],
     )
 
     return LaunchDescription(

@@ -18,6 +18,7 @@ def generate_launch_description():
             {"publish_robot_description_semantic": True},
             {"use_sim_time": False},
         ],
+        remappings=[("/joint_states", "/rrl/actual_joint_states")],
     )
 
     return LaunchDescription(
