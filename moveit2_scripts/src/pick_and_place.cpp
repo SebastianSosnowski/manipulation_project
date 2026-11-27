@@ -12,6 +12,8 @@
 #include <vector>
 
 #include "moveit_msgs/msg/collision_object.hpp"
+#include "moveit_msgs/msg/constraints.hpp"
+#include "moveit_msgs/msg/joint_constraint.hpp"
 #include "shape_msgs/msg/solid_primitive.hpp"
 
 namespace {
@@ -91,12 +93,12 @@ bool PickAndPlace::execute_trajectory_plan(
   pre_grasp_pose.pose.orientation.w = 0.0;
 
   setup_pose_target(*move_group_robot_, pre_grasp_pose);
-  if (!plan_trajectory(*move_group_robot_, trajectory_plan_robot_) ||
+  if (!plan_pre_grasp_trajectory(trajectory_plan_robot_) ||
       !execute_trajectory(*move_group_robot_, trajectory_plan_robot_)) {
     RCLCPP_ERROR(logger_, "Failed to move to pre-grasp pose");
     return false;
   }
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   setup_named_target(*move_group_gripper_, "gripper_open");
   if (!plan_trajectory(*move_group_gripper_, trajectory_plan_gripper_) ||
@@ -114,7 +116,7 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to descend towards object");
     return false;
   }
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   setup_named_target(*move_group_gripper_, "gripper_close");
   if (!plan_trajectory(*move_group_gripper_, trajectory_plan_gripper_) ||
@@ -136,7 +138,7 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to lift object");
     return false;
   }
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   const std::map<std::string, double> place_joint_positions = {
       {"shoulder_pan_joint", 2.6959}, {"shoulder_lift_joint", -0.6850},
@@ -149,7 +151,7 @@ bool PickAndPlace::execute_trajectory_plan(
     RCLCPP_ERROR(logger_, "Failed to move to place position");
     return false;
   }
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   setup_named_target(*move_group_gripper_, "gripper_open");
   if (!plan_trajectory(*move_group_gripper_, trajectory_plan_gripper_) ||
@@ -177,6 +179,22 @@ bool PickAndPlace::execute_trajectory_plan(
 bool PickAndPlace::plan_trajectory(MoveGroupInterface &move_group, Plan &plan) {
   move_group.setStartStateToCurrentState();
   return move_group.plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+}
+
+bool PickAndPlace::plan_pre_grasp_trajectory(Plan &trajectory_plan) {
+  moveit_msgs::msg::Constraints path_constraints;
+  moveit_msgs::msg::JointConstraint elbow_constraint;
+  elbow_constraint.joint_name = "elbow_joint";
+  elbow_constraint.position = 1.5;
+  elbow_constraint.tolerance_below = 1.0;
+  elbow_constraint.tolerance_above = 1.0;
+  elbow_constraint.weight = 1.0;
+  path_constraints.joint_constraints.push_back(elbow_constraint);
+
+  move_group_robot_->setPathConstraints(path_constraints);
+  const bool planned = plan_trajectory(*move_group_robot_, trajectory_plan);
+  move_group_robot_->clearPathConstraints();
+  return planned;
 }
 
 bool PickAndPlace::execute_trajectory(MoveGroupInterface &move_group,
@@ -257,8 +275,7 @@ bool PickAndPlace::attach_box_to_gripper(
   }
 
   const std::vector<std::string> touch_links = {
-      "robotiq_85_left_finger_tip_link",
-      "robotiq_85_right_finger_tip_link"};
+      "robotiq_85_left_finger_tip_link", "robotiq_85_right_finger_tip_link"};
   if (!move_group_robot_->attachObject(BOX_ID, GRIPPER_ATTACH_LINK,
                                        touch_links)) {
     RCLCPP_ERROR(logger_, "Failed to attach box to gripper");

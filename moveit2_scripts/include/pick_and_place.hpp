@@ -52,6 +52,7 @@ private:
   const double gripper_tcp_offset_{0.16};
 
   bool plan_trajectory(MoveGroupInterface &move_group, Plan &trajectory_plan);
+  bool plan_pre_grasp_trajectory(Plan &trajectory_plan);
   bool execute_trajectory(MoveGroupInterface &move_group,
                           const Plan &trajectory_plan);
   void setup_named_target(MoveGroupInterface &move_group,
